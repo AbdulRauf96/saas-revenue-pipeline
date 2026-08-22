@@ -1,0 +1,87 @@
+# SaaS companies tracked by this pipeline.
+# Validated against the SEC companyfacts API on 2026-08-22.
+# rpo_available: false where the company does not disclose
+# RevenueRemainingPerformanceObligation — permitted under the ASC 606
+# practical expedient for contracts of one year or less.
+
+companies:
+  - ticker: CRM
+    cik: "0001108524"
+    name: Salesforce, Inc.
+    rpo_available: true
+  - ticker: NOW
+    cik: "0001373715"
+    name: ServiceNow, Inc.
+    rpo_available: true
+  - ticker: WDAY
+    cik: "0001327811"
+    name: Workday, Inc.
+    rpo_available: true
+  - ticker: SNOW
+    cik: "0001640147"
+    name: Snowflake Inc.
+    rpo_available: true
+  - ticker: DDOG
+    cik: "0001561550"
+    name: Datadog, Inc.
+    rpo_available: true
+  - ticker: MDB
+    cik: "0001441816"
+    name: MongoDB, Inc.
+    rpo_available: true
+  - ticker: ZS
+    cik: "0001713683"
+    name: Zscaler, Inc.
+    rpo_available: true
+  - ticker: CRWD
+    cik: "0001535527"
+    name: CrowdStrike Holdings, Inc.
+    rpo_available: true
+  - ticker: NET
+    cik: "0001477333"
+    name: Cloudflare, Inc.
+    rpo_available: true
+  - ticker: TEAM
+    cik: "0001650372"
+    name: Atlassian Corporation
+    rpo_available: true
+  - ticker: HUBS
+    cik: "0001404655"
+    name: HubSpot, Inc.
+    rpo_available: true
+  - ticker: ZM
+    cik: "0001585521"
+    name: Zoom Communications, Inc.
+    rpo_available: true
+  - ticker: DOCU
+    cik: "0001261333"
+    name: DocuSign, Inc.
+    rpo_available: true
+  - ticker: OKTA
+    cik: "0001660134"
+    name: Okta, Inc.
+    rpo_available: true
+  - ticker: TWLO
+    cik: "0001447669"
+    name: Twilio Inc.
+    rpo_available: true
+  - ticker: SHOP
+    cik: "0001594805"
+    name: Shopify Inc.
+    rpo_available: false
+  - ticker: ADBE
+    cik: "0000796343"
+    name: Adobe Inc.
+    rpo_available: false
+  - ticker: INTU
+    cik: "0000896878"
+    name: Intuit Inc.
+    rpo_available: false
+  - ticker: PANW
+    cik: "0001327567"
+    name: Palo Alto Networks, Inc.
+    rpo_available: true
+  - ticker: VEEV
+    cik: "0001393052"
+    name: Veeva Systems Inc.
+    rpo_available: false
