@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
 import yaml
-import os
 
 # Project root: this file is at src/saas_revenue_pipeline/config.py
 PROJECT_ROOT = Path(__file__).resolve().parents[2]

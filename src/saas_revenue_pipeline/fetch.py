@@ -3,7 +3,7 @@
 import json
 import logging
 import time
-from datetime import date
+from datetime import UTC, datetime
 from pathlib import Path
 
 import requests
@@ -39,7 +39,7 @@ def fetch_company_facts(company: Company, output_dir: Path) -> Path:
 
     payload = response.json()
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / f"CIK{company.cik}_{date.today().isoformat()}.json"
+    output_path = output_dir / f"CIK{company.cik}_{datetime.now(UTC).date().isoformat()}.json"
     output_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     logger.info(

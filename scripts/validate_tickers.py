@@ -35,4 +35,9 @@ def main() -> None:
         has_rpo = RPO_TAG in tags
         has_dr = DEFERRED_REVENUE_TAG in tags
 
-        drift = "" if has_rpo == company.rpo_available else "
+        drift = "" if has_rpo == company.rpo_available else "  <-- RPO DRIFT"
+        print(
+            f"{company.ticker:6} {company.cik}  ok  tags={len(tags):4}  "
+            f"RPO={'y' if has_rpo else 'n'}  DefRev={'y' if has_dr else 'n'}"
+            f"{drift}"
+        )
