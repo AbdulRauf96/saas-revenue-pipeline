@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import yaml
+import os
 
 # Project root: this file is at src/saas_revenue_pipeline/config.py
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -71,3 +72,14 @@ def load_config(
         raise ValueError(f"no companies found in {path}")
 
     return Config(companies=companies, raw_dir=raw_dir or DEFAULT_RAW_DIR)
+
+DEFAULT_USER_AGENT = "Abdul Rauf Maroof abdulrauf96@gmail.com"
+
+
+def user_agent() -> str:
+    """SEC-required identifying header.
+
+    Reads SEC_USER_AGENT so CI can supply it as a secret; falls back to the
+    local default for development.
+    """
+    return os.environ.get("SEC_USER_AGENT", DEFAULT_USER_AGENT)

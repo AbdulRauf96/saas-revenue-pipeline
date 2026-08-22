@@ -8,11 +8,9 @@ from pathlib import Path
 
 import requests
 
-logger = logging.getLogger(__name__)
+from saas_revenue_pipeline.config import Company, load_config, user_agent
 
-# SEC requires a descriptive User-Agent identifying the requester.
-# Requests without one are rejected with HTTP 403.
-USER_AGENT = "Abdul Rauf Maroof abdulrauf96@gmail.com"
+logger = logging.getLogger(__name__)
 
 COMPANY_FACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json"
 
@@ -20,27 +18,28 @@ COMPANY_FACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json"
 REQUEST_DELAY_SECONDS = 0.2
 
 
-def fetch_company_facts(cik: int, output_dir: Path) -> Path:
+def fetch_company_facts(company: Company, output_dir: Path) -> Path:
     """Download all XBRL facts for one company and save the raw JSON.
 
     Args:
-        cik: SEC Central Index Key, unpadded (e.g. 1640147 for Snowflake).
+        company: Validated config entry. Its CIK is already 10-digit padded.
         output_dir: Directory to write into. Created if absent.
 
     Returns:
         Path to the written file.
     """
-    padded_cik = str(cik).zfill(10)
-    url = COMPANY_FACTS_URL.format(cik=padded_cik)
+    url = COMPANY_FACTS_URL.format(cik=company.cik)
 
-    logger.info("Fetching CIK %s", padded_cik)
-    response = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=30)
+    logger.info("Fetching %s (CIK %s)", company.ticker, company.cik)
+    response = requests.get(
+        url, headers={"User-Agent": user_agent()}, timeout=30
+    )
     response.raise_for_status()
     time.sleep(REQUEST_DELAY_SECONDS)
 
     payload = response.json()
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / f"CIK{padded_cik}_{date.today().isoformat()}.json"
+    output_path = output_dir / f"CIK{company.cik}_{date.today().isoformat()}.json"
     output_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     logger.info(
@@ -53,5 +52,6 @@ def fetch_company_facts(cik: int, output_dir: Path) -> Path:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
-    fetch_company_facts(cik=1640147, output_dir=Path("data/raw"))
+    logging.basicConfig(level=logging.INFO, format="%(levelname)-8s %(message)s")
+    config = load_config()
+    fetch_company_facts(config.company("SNOW"), config.raw_dir)
