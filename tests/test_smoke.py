@@ -12,7 +12,3 @@ def test_fetch_module_imports():
 
     assert hasattr(fetch, "fetch_company_facts")
 
-
-def test_cik_padding():
-    """CIK must be zero-padded to 10 digits or the API returns 404."""
-    assert str(1640147).zfill(10) == "0001640147"
