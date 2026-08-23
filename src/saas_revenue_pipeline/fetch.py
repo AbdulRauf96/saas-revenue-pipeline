@@ -17,6 +17,9 @@ COMPANY_FACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json"
 # SEC rate limit is 10 requests/second. Stay well under it.
 REQUEST_DELAY_SECONDS = 0.2
 
+# Skip the network entirely for cache files younger than this.
+CACHE_TTL_SECONDS = 24 * 60 * 60
+
 # Retry policy for transient failures.
 MAX_ATTEMPTS = 4
 BACKOFF_BASE_SECONDS = 1.0
@@ -83,9 +86,16 @@ def fetch_company_facts(
 
     headers = {"User-Agent": user_agent()}
     if output_path.exists() and not force:
-        headers["If-Modified-Since"] = formatdate(
-            output_path.stat().st_mtime, usegmt=True
-        )
+        stat = output_path.stat()
+        age = time.time() - stat.st_mtime
+
+        if stat.st_size == 0:
+            logger.warning("%s cache is empty, re-downloading", company.ticker)
+        elif age < CACHE_TTL_SECONDS:
+            logger.info("%s cached %.1fh ago, skipping", company.ticker, age / 3600)
+            return output_path
+        else:
+            headers["If-Modified-Since"] = formatdate(stat.st_mtime, usegmt=True)
 
     logger.info("fetching %s (CIK %s)", company.ticker, company.cik)
     response = _get_with_retry(COMPANY_FACTS_URL.format(cik=company.cik), headers)

@@ -34,3 +34,4 @@ descriptive `User-Agent` header identifying the requester.
   the migration but the older history is less consistent
 - Fiscal years vary by company; all aggregation is on period end date, never on
   the reported fiscal year label
+- Fetches are cached locally. Files newer than 24 hours are reused without a request; older ones use conditional requests (If-Modified-Since). The SEC's XBRL endpoint returns no cache-validation headers, so conditional-request hit rates vary — roughly half return 304 in practice.
