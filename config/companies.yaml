@@ -72,7 +72,7 @@ companies:
   - ticker: ADBE
     cik: "0000796343"
     name: Adobe Inc.
-    rpo_available: false
+    rpo_available: true
   - ticker: INTU
     cik: "0000896878"
     name: Intuit Inc.

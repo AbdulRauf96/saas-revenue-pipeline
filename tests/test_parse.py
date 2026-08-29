@@ -99,3 +99,18 @@ def test_present_concept_yields_facts(snow):
 def test_cik_is_zero_padded(shop):
     facts = parse_company_facts(shop)
     assert all(len(f.cik) == 10 for f in facts)
+
+def test_config_rpo_flags_match_cached_data():
+    """rpo_available must reflect what the cached payloads actually contain."""
+    from saas_revenue_pipeline.config import load_config
+    from saas_revenue_pipeline.parse import parse_file
+
+    config = load_config()
+    for company in config.companies:
+        path = config.raw_dir / f"CIK{company.cik}.json"
+        if not path.exists():
+            continue
+        has_rpo = any(f.concept == "rpo" for f in parse_file(path))
+        assert has_rpo == company.rpo_available, (
+            f"{company.ticker}: config says {company.rpo_available}, data says {has_rpo}"
+        )
