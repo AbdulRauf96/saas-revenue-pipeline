@@ -55,3 +55,81 @@ def test_instant_start_is_null_in_view(tmp_path, facts):
         """
     ).fetchone()[0]
     assert nulls == 0
+
+def test_missing_deferred_revenue_is_null_not_zero(tmp_path):
+    """A company with no deferred revenue fact must yield NULL, not 0."""
+    from saas_revenue_pipeline.config import load_config
+    from saas_revenue_pipeline.metrics import build_views
+    from saas_revenue_pipeline.parse import parse_file
+
+    config = load_config()
+    path = config.raw_dir / "CIK0001640147.json"
+    if not path.exists():
+        pytest.skip("SNOW not cached")
+
+    con = connect(tmp_path / "test.duckdb")
+    write_facts(con, parse_file(path))
+    build_views(con)
+
+    row = con.execute(
+        """
+        SELECT deferred_revenue FROM metrics_final
+        WHERE cik = '0001640147' AND grain = 'annual'
+          AND period_end = DATE '2019-01-31'
+        """
+    ).fetchone()
+    assert row is not None
+    assert row[0] is None
+
+def test_metrics_match_reported_revenue(tmp_path):
+    """CRM FY2024 revenue was $34.857bn as reported. The pipeline must agree."""
+    from saas_revenue_pipeline.config import load_config
+    from saas_revenue_pipeline.metrics import build_views
+    from saas_revenue_pipeline.parse import parse_file
+
+    config = load_config()
+    path = config.raw_dir / "CIK0001108524.json"
+    if not path.exists():
+        pytest.skip("CRM not cached")
+
+    con = connect(tmp_path / "test.duckdb")
+    write_facts(con, parse_file(path))
+    build_views(con)
+
+    row = con.execute(
+        """
+        SELECT revenue FROM metrics_final
+        WHERE cik = '0001108524' AND grain = 'annual'
+          AND period_end = DATE '2024-01-31'
+        """
+    ).fetchone()
+    assert row is not None
+    assert row[0] == 34_857_000_000
+
+
+def test_no_grain_mixing_in_windows(tmp_path):
+    """A quarterly row's prior-year comparison must also be quarterly."""
+    from saas_revenue_pipeline.config import load_config
+    from saas_revenue_pipeline.metrics import build_views
+    from saas_revenue_pipeline.parse import parse_file
+
+    config = load_config()
+    path = config.raw_dir / "CIK0001108524.json"
+    if not path.exists():
+        pytest.skip("CRM not cached")
+
+    con = connect(tmp_path / "test.duckdb")
+    write_facts(con, parse_file(path))
+    build_views(con)
+
+    # An annual figure is roughly 4x a quarterly one. If a window crossed
+    # grains, some yoy value would be wildly out of range.
+    bad = con.execute(
+        """
+        SELECT count(*) FROM metrics_final
+        WHERE grain = 'quarterly'
+          AND revenue_yoy IS NOT NULL
+          AND (revenue_yoy > 5 OR revenue_yoy < -0.9)
+        """
+    ).fetchone()[0]
+    assert bad == 0

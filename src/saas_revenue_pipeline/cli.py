@@ -52,6 +52,24 @@ def main() -> int:
         help="enable debug logging",
     )
 
+    build_parser = subparsers.add_parser(
+        "build", help="parse cached filings and compute metrics"
+    )
+    build_parser.add_argument(
+        "-t",
+        "--ticker",
+        action="append",
+        metavar="TICKER",
+        help="build only this ticker; repeatable. Default: all configured companies",
+    )
+    build_parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        default=None,
+        help="enable debug logging",
+    )
+
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -71,6 +89,38 @@ def main() -> int:
         paths = fetch_all(companies, config.raw_dir, force=args.force)
         logger.info("%d/%d succeeded", len(paths), len(companies))
         return 0 if len(paths) == len(companies) else 1
+
+    if args.command == "build":
+        # Imported here so `saasrev fetch` doesn't pay DuckDB's import cost.
+        from saas_revenue_pipeline.metrics import build_views
+        from saas_revenue_pipeline.parse import parse_file
+        from saas_revenue_pipeline.storage import connect, fact_count, write_facts
+
+        config = load_config()
+        companies = (
+            [config.company(t) for t in args.ticker]
+            if args.ticker
+            else list(config.companies)
+        )
+
+        con = connect(config.raw_dir.parent / "saasrev.duckdb")
+        written = 0
+        skipped = 0
+
+        for company in companies:
+            path = config.raw_dir / f"CIK{company.cik}.json"
+            if not path.exists():
+                logger.warning("%s: no cached file, run fetch first", company.ticker)
+                skipped += 1
+                continue
+            facts = parse_file(path)
+            written += write_facts(con, facts)
+            logger.info("%s: %d facts", company.ticker, len(facts))
+
+        build_views(con)
+        logger.info("wrote %d facts, %d total in db", written, fact_count(con))
+        con.close()
+        return 1 if skipped else 0
 
     parser.error(f"unhandled command: {args.command}")
     return 2
