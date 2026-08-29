@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS facts (
     period_type   VARCHAR NOT NULL,
     period_start  DATE    NOT NULL,
     period_end    DATE    NOT NULL,
+    grain         VARCHAR NOT NULL,
     value         DOUBLE,
     unit          VARCHAR,
     source_tag    VARCHAR,
@@ -39,15 +40,16 @@ SELECT
     source_tag,
     accn,
     filed,
-    form
+    form,
+    grain
 FROM facts;
 """
 
 UPSERT = """
 INSERT INTO facts (
     cik, concept, period_type, period_start, period_end,
-    value, unit, source_tag, accn, filed, form
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    value, unit, source_tag, accn, filed, form, grain
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT (cik, concept, period_type, period_start, period_end, unit)
 DO UPDATE SET
     value      = excluded.value,
@@ -87,6 +89,7 @@ def write_facts(con: duckdb.DuckDBPyConnection, facts: list[Fact]) -> int:
             f.accn,
             f.filed,
             f.form,
+            f.grain,
         )
         for f in facts
     ]

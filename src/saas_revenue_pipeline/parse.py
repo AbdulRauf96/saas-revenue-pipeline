@@ -56,6 +56,40 @@ class Fact:
     def is_instant(self) -> bool:
         return self.period_type == "instant"
 
+    @property
+    def period_days(self) -> int:
+        """Length of the period in days. Zero for instant facts."""
+        if self.period_type == "instant":
+            return 0
+        return (self.period_end - self.period_start).days
+
+    @property
+    def grain(self) -> str:
+        """Bucketed period length.
+
+        Returns 'instant', 'quarterly', 'half_year', 'three_quarters',
+        'annual', or 'other'.
+
+        SEC durations vary because fiscal quarters are 13-week periods and
+        fiscal years occasionally run 53 weeks. The half-year and three-quarter
+        buckets capture year-to-date cumulative figures: a Q3 10-Q reports both
+        the three months ended and the nine months ended. Mixing those into a
+        quarterly series would compare a nine-month cumulative against a
+        three-month figure and produce meaningless growth rates.
+        """
+        if self.period_type == "instant":
+            return "instant"
+        days = self.period_days
+        if 80 <= days <= 100:
+            return "quarterly"
+        if 170 <= days <= 195:
+            return "half_year"
+        if 260 <= days <= 285:
+            return "three_quarters"
+        if 350 <= days <= 380:
+            return "annual"
+        return "other"
+
 
 def _to_date(value: str) -> date:
     return date.fromisoformat(value)
