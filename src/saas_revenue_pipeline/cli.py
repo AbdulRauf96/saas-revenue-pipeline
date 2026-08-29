@@ -70,6 +70,17 @@ def main() -> int:
         help="enable debug logging",
     )
 
+    export_parser = subparsers.add_parser(
+        "export", help="write metrics to output/ as Parquet and CSV"
+    )
+    export_parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        default=None,
+        help="enable debug logging",
+    )
+
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -121,6 +132,17 @@ def main() -> int:
         logger.info("wrote %d facts, %d total in db", written, fact_count(con))
         con.close()
         return 1 if skipped else 0
+
+    if args.command == "export":
+        from saas_revenue_pipeline.metrics import export_metrics
+        from saas_revenue_pipeline.storage import connect
+
+        config = load_config()
+        con = connect(config.raw_dir.parent / "saasrev.duckdb")
+        paths = export_metrics(con, config.raw_dir.parent.parent / "output")
+        con.close()
+        logger.info("exported %d files", len(paths))
+        return 0
 
     parser.error(f"unhandled command: {args.command}")
     return 2

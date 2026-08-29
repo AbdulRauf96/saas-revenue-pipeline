@@ -133,3 +133,27 @@ def test_no_grain_mixing_in_windows(tmp_path):
         """
     ).fetchone()[0]
     assert bad == 0
+
+def test_ttm_is_plausible_multiple_of_quarterly_revenue(tmp_path):
+    """A trailing-twelve-month figure should be roughly 4x a quarter, never 8x."""
+    from saas_revenue_pipeline.config import load_config
+    from saas_revenue_pipeline.metrics import build_views
+    from saas_revenue_pipeline.parse import parse_file
+
+    config = load_config()
+    path = config.raw_dir / "CIK0000796343.json"
+    if not path.exists():
+        pytest.skip("ADBE not cached")
+
+    con = connect(tmp_path / "test.duckdb")
+    write_facts(con, parse_file(path))
+    build_views(con)
+
+    bad = con.execute(
+        """
+        SELECT count(*) FROM metrics_final
+        WHERE grain = 'quarterly'
+          AND ttm_revenue > revenue * 6
+        """
+    ).fetchone()[0]
+    assert bad == 0

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 import duckdb
 
@@ -67,7 +68,7 @@ SELECT
     -- Trailing twelve months. Quarterly: 4 periods. Annual: the period itself.
     CASE WHEN grain = 'quarterly'
          THEN sum(revenue) OVER (
-             PARTITION BY cik ORDER BY period_end ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
+             PARTITION BY cik, grain ORDER BY period_end ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
          )
          ELSE revenue
     END AS ttm_revenue,
@@ -102,3 +103,32 @@ def build_views(con: duckdb.DuckDBPyConnection) -> None:
     for statement in (PIVOT, METRICS, RATIOS):
         con.execute(statement)
     logger.info("built derived views")
+
+def export_metrics(con: duckdb.DuckDBPyConnection, output_dir: Path) -> list[Path]:
+    """Write metrics to Parquet and CSV for downstream use.
+
+    Parquet preserves types and is compact; CSV is readable in a diff and on
+    GitHub. Both are committed, so the automated commit history shows the
+    pipeline ran.
+
+    DuckDB writes COPY output in parallel and interleaves chunks as threads
+    finish, which discards the ORDER BY. Without preserve_insertion_order the
+    files differ byte-for-byte between runs on identical data, and every
+    scheduled run would produce a meaningless commit.
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
+    con.execute("SET preserve_insertion_order = true")
+    written = []
+
+    for grain in ("annual", "quarterly"):
+        for fmt in ("parquet", "csv"):
+            path = output_dir / f"metrics_{grain}.{fmt}"
+            con.execute(
+                f"COPY (SELECT * FROM metrics_final WHERE grain = ? "
+                f"ORDER BY cik, period_end) TO '{path}' (FORMAT {fmt.upper()})",
+                [grain],
+            )
+            written.append(path)
+            logger.info("wrote %s", path.name)
+
+    return written
